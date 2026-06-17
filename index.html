@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LearnEnglish - Premium Learning Platform</title>
+    <!-- SolidJS Browser Runtime Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/solid-js/1.8.11/solid.browser.view.min.js"></script>
+    <!-- Modern Styling Engine -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased font-sans">
+
+    <!-- Primary entry node for application rendering -->
+    <div id="root"></div>
+
+    <script type="module">
+        import { 
+            initAppSignals, currentTab, setCurrentTab, quizIndex, 
+            selectedQuizOpt, userProgress, quizAnswered,
+            handleQuizSelection, getQuizzes 
+        } from './app.js';
+
+        // Initialize variables safely now that dependencies are active
+        initAppSignals();
+
+        // Bind layout triggers to structural interface window targets
+        window.navTo = (tab) => setCurrentTab(tab);
+        window.chooseOpt = (i, correct) => handleQuizSelection(i, correct);
+
+        // Fetch exercise objects from JSON file storage layout
+        fetch('./data.json')
+            .then(res => res.json())
+            .then(data => { 
+                getQuizzes(data.quizzes || []);
+                Solid.render(App, document.getElementById('root')); 
+            })
+            .catch(err => console.error("Error reading data file:", err));
+
+        function App() {
+            const { For } = Solid;
+
+            return Solid.html`
+                <div class="min-h-screen flex flex-col">
+                    <!-- Standard Navigation Menu Interface -->
+                    <nav class="bg-white shadow-sm border-b p-4 flex justify-between items-center">
+                        <div class="flex items-center space-x-2 cursor-pointer" onclick="window.navTo('dashboard')">
+                            <div class="p-2 bg-indigo-600 rounded-xl text-white"><i class="fa-solid fa-graduation-cap"></i></div>
+                            <span class="text-xl font-black">LearnEnglish</span>
+                        </div>
+                        <div class="flex gap-2 bg-slate-100 p-1 rounded-xl text-sm font-semibold">
+                            <button onclick="window.navTo('dashboard')" class="px-4 py-2 rounded-lg">Dashboard</button>
+                            <button onclick="window.navTo('quiz')" class="px-4 py-2 rounded-lg">Exercises</button>
+                        </div>
+                    </nav>
+
+                    <!-- Application View Content Frame Panels -->
+                    <main class="max-w-4xl w-full mx-auto p-6 flex-grow">
+                        
+                        <!-- Panel View: Dashboard Metrics Display -->
+                        <div class=\${() => currentTab() === 'dashboard' ? 'space-y-6' : 'hidden'}>
+                            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl p-8 text-white shadow-md">
+                                <h1 class="text-3xl font-black">Welcome Back!</h1>
+                                <p class="text-indigo-100 mt-2">Your 20-exercise language assignment is ready.</p>
+                                <div class="mt-4 bg-white/20 inline-block px-4 py-2 rounded-xl font-bold">
+                                    🏆 Current Performance Score: \${() => userProgress().score} Points
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Panel View: Interactive Language Quiz Exercises -->
+                        <div class=\${() => currentTab() === 'quiz' ? 'space-y-4' : 'hidden'}>
+                            <div class="flex justify-between items-center">
+                                <h2 class="text-xl font-black">Practice Session</h2>
+                                <span class="bg-indigo-100 text-indigo-700 font-bold px-3 py-1 rounded-full text-xs">
+                                    Exercise \${() => quizIndex() + 1} of \${() => quizAnswered().length}
+                                </span>
+                            </div>
+                            
+                            <div class="bg-white p-6 rounded-2xl border shadow-sm">
+                                <p class="text-lg font-bold">
+                                    \${() => quizIndex() < quizAnswered().length ? quizAnswered()[quizIndex()]?.q : 'Loading questions...'}
+                                </p>
+                                
+                                <!-- Dynamic Option Elements Loop Interface -->
+                                <div class="grid grid-cols-1 gap-2 mt-4">
+                                    <\${For} each=\${() => {
+                                        const active = quizAnswered()[quizIndex()];
+                                        return active ? active.options : [];
+                                    }}>
+                                        \${(opt, idx) => {
+                                            return Solid.html\`
+                                                <button onclick="window.chooseOpt(\${idx()}, \${quizAnswered()[quizIndex()].correct})" 
+                                                        class="w-full text-left p-4 rounded-xl border font-medium transition-all hover:bg-slate-50 focus:outline-none">
+                                                    \${opt}
+                                                </button>
+                                            \`;
+                                        }}
+                                    <//>
+                                </div>
+                            </div>
+                        </div>
+
+                    </main>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
